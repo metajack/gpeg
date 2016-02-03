@@ -92,18 +92,19 @@ fn main() {
             coeffs: &coeffs_texture,
         };
 
-        let output_pass1 = [("col_top",
-                       &glium::texture::IntegralTexture2d::empty_with_format(
-                           &display,
-                           glium::texture::UncompressedIntFormat::I16,
-                           glium::texture::MipmapsOption::NoMipmap,
-                           8, 8).unwrap()),
-                      ("col_bot",
-                       &glium::texture::IntegralTexture2d::empty_with_format(
-                           &display,
-                           glium::texture::UncompressedIntFormat::I16,
-                           glium::texture::MipmapsOption::NoMipmap,
-                           8, 8).unwrap())
+        let col_top = glium::texture::IntegralTexture2d::empty_with_format(
+            &display,
+            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::MipmapsOption::NoMipmap,
+            8, 8).unwrap();
+        let col_bot = glium::texture::IntegralTexture2d::empty_with_format(
+            &display,
+            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::MipmapsOption::NoMipmap,
+            8, 8).unwrap();
+        let output_pass1 = [
+            ("col_top", &col_top),
+            ("col_bot", &col_bot)
         ];
         let mut target1 = glium::framebuffer::MultiOutputFrameBuffer::new(&display,
                                                                           output_pass1.iter().cloned())
@@ -117,23 +118,24 @@ fn main() {
             col_bot: output_pass1[1].1,
         };
 
-        let output_pass2 = [("pack_top",
-                             &glium::texture::IntegralTexture2d::empty_with_format(
-                                 &display,
-                                 glium::texture::UncompressedIntFormat::I16,
-                                 glium::texture::MipmapsOption::NoMipmap,
-                                 8, 8).unwrap()),
-                            ("pack_bot",
-                             &glium::texture::IntegralTexture2d::empty_with_format(
-                                 &display,
-                                 glium::texture::UncompressedIntFormat::I16,
-                                 glium::texture::MipmapsOption::NoMipmap,
-                                 8, 8).unwrap())
+        let pack_top = glium::texture::IntegralTexture2d::empty_with_format(
+            &display,
+            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::MipmapsOption::NoMipmap,
+            8, 8).unwrap();
+        let pack_bot = glium::texture::IntegralTexture2d::empty_with_format(
+            &display,
+            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::MipmapsOption::NoMipmap,
+            8, 8).unwrap();
+        let output_pass2 = [
+            ("pack_top", &pack_top),
+            ("pack_bot", &pack_bot)
         ];
 
-        let mut target2 = glium::framebuffer::MultiOutputFrameBuffer::new(&display,
-                                                                          output_pass2.iter().cloned())
-            .unwrap();
+        let mut target2 = glium::framebuffer::MultiOutputFrameBuffer::new(
+            &display,
+            output_pass2.iter().cloned()).unwrap();
         target2.clear_color(0.0, 0.0, 0.0, 1.0);
         target2.draw(&vertices_main, &indices, &program_pass2, &uniforms_pass2,
                      &Default::default()).unwrap();
@@ -154,10 +156,6 @@ fn main() {
         target3.draw(&vertices_main, &indices, &program_pass3, &uniforms_pass3,
                      &Default::default()).unwrap();
 
-        let uniforms_out = uniform! {
-            tex: &pixel_texture,
-        };
-        
         let uniforms_out_left = uniform! {
             tex: &pixel_texture,
         };
