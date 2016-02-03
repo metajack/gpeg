@@ -109,9 +109,50 @@ fn main() {
         let mut target1 = glium::framebuffer::MultiOutputFrameBuffer::new(&display,
                                                                           output_pass1.iter().cloned())
             .unwrap();
-        target1.clear_color(0.0, 0.0, 0.0, 1.0);
         target1.draw(&vertices_main, &indices, &program_pass1, &uniforms_pass1,
                      &Default::default()).unwrap();
+
+        let rect = glium::Rect { left: 0, bottom: 0, width: 8, height: 8 };
+
+        // read out coeffs
+        let coeffs_pixels: Vec<Vec<i16>
+        // read out col_top, col_bot
+        let col_top_pixels: Vec<Vec<(i16,i16,i16,i16)>> = col_top
+            .main_level()
+            .first_layer()
+            .into_image(None)
+            .unwrap()
+            .raw_read(&rect);
+        let col_bot_pixels: Vec<Vec<(i16,i16,i16,i16)>> = col_bot
+            .main_level()
+            .first_layer()
+            .into_image(None)
+            .unwrap()
+            .raw_read(&rect);
+
+        for y in 0..8 {
+            for x in 0..8 {
+                let color = if y < 4 {
+                    col_top_pixels[x][0]
+                } else {
+                    col_bot_pixels[x][0]
+                };
+                let val = match y {
+                    0 => color.0,
+                    1 => color.1,
+                    2 => color.2,
+                    3 => color.3,
+                    4 => color.0,
+                    5 => color.1,
+                    6 => color.2,
+                    7 => color.3,
+                    _ => panic!("bad index"),
+                };
+                print!("{}, ", val);
+            }
+            println!("");
+        }
+        println!("");
 
         let uniforms_pass2 = uniform! {
             col_top: output_pass1[0].1,
@@ -136,7 +177,6 @@ fn main() {
         let mut target2 = glium::framebuffer::MultiOutputFrameBuffer::new(
             &display,
             output_pass2.iter().cloned()).unwrap();
-        target2.clear_color(0.0, 0.0, 0.0, 1.0);
         target2.draw(&vertices_main, &indices, &program_pass2, &uniforms_pass2,
                      &Default::default()).unwrap();
 
@@ -152,7 +192,6 @@ fn main() {
             8, 8).unwrap();
         
         let mut target3 = glium::framebuffer::SimpleFrameBuffer::new(&display, &output_pass3).unwrap();
-        target3.clear_color(0.0, 0.0, 0.0, 1.0);
         target3.draw(&vertices_main, &indices, &program_pass3, &uniforms_pass3,
                      &Default::default()).unwrap();
 
