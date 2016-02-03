@@ -15,22 +15,22 @@ implement_vertex!(Vertex, position, tex_coords);
 fn main() {
     let display = glium::glutin::WindowBuilder::new().build_glium().unwrap();
     loop {
-        let pixels: Vec<i8> = vec![28, 28, 30, -32, 30, 28, 30, 32,
-                                   29, 29, 29, 29, 29, 29, 29, 29,
-                                   32, 31, 28, 26, 28, 31, 28, 26,
-                                   31, 30, 28, 126, 28, 31, 28, 26,
-                                   30, 30, 29, 28, 29, 31, 29, 28,
-                                   28, 28, 29, 29, 28, 28, 28, 29,
-                                   27, 27, 29, 30, 27, 26, 27, 30,
-                                   28, 28, 29, 29, 27, 27, 27, 29];
-        let coeffs: Vec<i16> = vec![3673, 24, 13, 2, -4, 0, 21, -15,
-                                    61, -3, 3, 45, -12, -5, -9, 8,
-                                    -3, -43, -22, -101, 58, 22, -13, 2,
-                                    28, -52, -30, -63, 34, 16, -10, 6,
-                                    23, -7, -5, 8, -5, -1, 1, 0,
-                                    -16, 1, 3, -10, 11, 5, 1, -2,
-                                    5, 11, 8, 15, -7, -3, 1, 0,
-                                    17, 4, 4, 3, -2, -3, -1, -5];
+        let pixels: Vec<i8> = vec![80, 46, -49, -61, -118, -52, 48, 53, 
+                                   68, -58, -12, -12, 0, 26, -50, 18, 
+                                   36, 35, 97, 86, 85, 77, -23, 15, 
+                                   28, 54, 90, 78, 74, 42, -41, 7, 
+                                   37, 33, -11, 24, 14, -68, -65, -27, 
+                                   66, 55, 72, 73, 34, 32, -33, 16, 
+                                   82, 37, 60, 70, -2, 1, -31, 80, 
+                                   87, 52, 7, 56, -7, -94, 9, 99];
+        let coeffs: Vec<i16> = vec![2851, 2238, 754, -890, 1705, -160, 772, -535, 
+                                    -1108, -702, 256, 1238, -927, 132, 480, 72, 
+                                    -779, -813, 3131, -277, 306, 860, -475, -138, 
+                                    -1320, 281, 1404, 277, -449, 279, -383, -289, 
+                                    -1150, 222, 1420, -478, -14, 37, -1530, 150, 
+                                    1449, -8, -94, -517, -775, -65, 230, -307, 
+                                    1043, 131, -163, -235, -584, -2, -487, -22, 
+                                    -523, 110, 368, -163, 88, 41, -466, -14];
     
         let pixel_image = glium::texture::RawImage2d {
             data: Cow::Owned(pixels),
@@ -50,22 +50,22 @@ fn main() {
 
         let coeffs_texture = glium::texture::IntegralTexture2d::with_format(&display, coeff_image, glium::texture::UncompressedIntFormat::I16, glium::texture::MipmapsOption::NoMipmap).unwrap();
 
-        let v1 = Vertex { position: [-0.75, -0.75], tex_coords: [0.0, 0.0] };
-        let v2 = Vertex { position: [-0.75, 0.75], tex_coords: [0.0, 1.0] };
-        let v3 = Vertex { position: [0.75, -0.75], tex_coords: [1.0, 0.0] };
-        let v4 = Vertex { position: [0.75, 0.75], tex_coords: [1.0, 1.0] };
+        let v1 = Vertex { position: [-0.75, -0.75], tex_coords: [0.0, 1.0] };
+        let v2 = Vertex { position: [-0.75, 0.75], tex_coords: [0.0, 0.0] };
+        let v3 = Vertex { position: [0.75, -0.75], tex_coords: [1.0, 1.0] };
+        let v4 = Vertex { position: [0.75, 0.75], tex_coords: [1.0, 0.0] };
         let strip = vec![v1, v2, v3, v4];
 
-        let v1 = Vertex { position: [-0.75, 0.0], tex_coords: [0.0, 0.0] };
-        let v2 = Vertex { position: [-0.75, 0.75], tex_coords: [0.0, 1.0] };
-        let v3 = Vertex { position: [0.0, 0.0], tex_coords: [1.0, 0.0] };
-        let v4 = Vertex { position: [0.0, 0.75], tex_coords: [1.0, 1.0] };
+        let v1 = Vertex { position: [-0.75, 0.0], tex_coords: [0.0, 1.0] };
+        let v2 = Vertex { position: [-0.75, 0.75], tex_coords: [0.0, 0.0] };
+        let v3 = Vertex { position: [0.0, 0.0], tex_coords: [1.0, 1.0] };
+        let v4 = Vertex { position: [0.0, 0.75], tex_coords: [1.0, 0.0] };
         let left_strip = vec![v1, v2, v3, v4];
 
-        let v1 = Vertex { position: [0.0, 0.0], tex_coords: [0.0, 0.0] };
-        let v2 = Vertex { position: [0.0, 0.75], tex_coords: [0.0, 1.0] };
-        let v3 = Vertex { position: [0.75, 0.0], tex_coords: [1.0, 0.0] };
-        let v4 = Vertex { position: [0.75, 0.75], tex_coords: [1.0, 1.0] };
+        let v1 = Vertex { position: [0.0, 0.0], tex_coords: [0.0, 1.0] };
+        let v2 = Vertex { position: [0.0, 0.75], tex_coords: [0.0, 0.0] };
+        let v3 = Vertex { position: [0.75, 0.0], tex_coords: [1.0, 1.0] };
+        let v4 = Vertex { position: [0.75, 0.75], tex_coords: [1.0, 0.0] };
         let right_strip = vec![v1, v2, v3, v4];
 
         let vertices_main = glium::VertexBuffer::new(&display, &strip).unwrap();
