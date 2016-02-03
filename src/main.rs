@@ -50,10 +50,10 @@ fn main() {
 
         let coeffs_texture = glium::texture::IntegralTexture2d::with_format(&display, coeff_image, glium::texture::UncompressedIntFormat::I16, glium::texture::MipmapsOption::NoMipmap).unwrap();
 
-        let v1 = Vertex { position: [-0.75, -0.75], tex_coords: [0.0, 1.0] };
-        let v2 = Vertex { position: [-0.75, 0.75], tex_coords: [0.0, 0.0] };
-        let v3 = Vertex { position: [0.75, -0.75], tex_coords: [1.0, 1.0] };
-        let v4 = Vertex { position: [0.75, 0.75], tex_coords: [1.0, 0.0] };
+        let v1 = Vertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] };
+        let v2 = Vertex { position: [-1.0, 1.0], tex_coords: [0.0, 1.0] };
+        let v3 = Vertex { position: [1.0, -1.0], tex_coords: [1.0, 0.0] };
+        let v4 = Vertex { position: [1.0, 1.0], tex_coords: [1.0, 1.0] };
         let strip = vec![v1, v2, v3, v4];
 
         let v1 = Vertex { position: [-0.75, 0.0], tex_coords: [0.0, 1.0] };
@@ -94,12 +94,12 @@ fn main() {
 
         let col_top = glium::texture::IntegralTexture2d::empty_with_format(
             &display,
-            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
             8, 8).unwrap();
         let col_bot = glium::texture::IntegralTexture2d::empty_with_format(
             &display,
-            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
             8, 8).unwrap();
         let output_pass1 = [
@@ -112,47 +112,7 @@ fn main() {
         target1.draw(&vertices_main, &indices, &program_pass1, &uniforms_pass1,
                      &Default::default()).unwrap();
 
-        let rect = glium::Rect { left: 0, bottom: 0, width: 8, height: 8 };
-
-        // read out coeffs
-        let coeffs_pixels: Vec<Vec<i16>
-        // read out col_top, col_bot
-        let col_top_pixels: Vec<Vec<(i16,i16,i16,i16)>> = col_top
-            .main_level()
-            .first_layer()
-            .into_image(None)
-            .unwrap()
-            .raw_read(&rect);
-        let col_bot_pixels: Vec<Vec<(i16,i16,i16,i16)>> = col_bot
-            .main_level()
-            .first_layer()
-            .into_image(None)
-            .unwrap()
-            .raw_read(&rect);
-
-        for y in 0..8 {
-            for x in 0..8 {
-                let color = if y < 4 {
-                    col_top_pixels[x][0]
-                } else {
-                    col_bot_pixels[x][0]
-                };
-                let val = match y {
-                    0 => color.0,
-                    1 => color.1,
-                    2 => color.2,
-                    3 => color.3,
-                    4 => color.0,
-                    5 => color.1,
-                    6 => color.2,
-                    7 => color.3,
-                    _ => panic!("bad index"),
-                };
-                print!("{}, ", val);
-            }
-            println!("");
-        }
-        println!("");
+        //let rect = glium::Rect { left: 0, bottom: 0, width: 8, height: 8 };
 
         let uniforms_pass2 = uniform! {
             col_top: output_pass1[0].1,
@@ -161,12 +121,12 @@ fn main() {
 
         let pack_top = glium::texture::IntegralTexture2d::empty_with_format(
             &display,
-            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
             8, 8).unwrap();
         let pack_bot = glium::texture::IntegralTexture2d::empty_with_format(
             &display,
-            glium::texture::UncompressedIntFormat::I16,
+            glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
             8, 8).unwrap();
         let output_pass2 = [
@@ -194,6 +154,56 @@ fn main() {
         let mut target3 = glium::framebuffer::SimpleFrameBuffer::new(&display, &output_pass3).unwrap();
         target3.draw(&vertices_main, &indices, &program_pass3, &uniforms_pass3,
                      &Default::default()).unwrap();
+
+        // let pixels: Vec<Vec<i8>> = output_pass3
+        //     .main_level()
+        //     .first_layer()
+        //     .into_image(None)
+        //     .unwrap()
+        //     .raw_read(&rect);
+        // for y in 0..8 {
+        //     for x in 0..8 {
+        //         print!("{}, ", pixels[y][x]);
+        //     }
+        //     println!("");
+        // }
+        // println!("");
+        // let pack_top_pixels: Vec<Vec<(i16,i16,i16,i16)>> = pack_top
+        //     .main_level()
+        //     .first_layer()
+        //     .into_image(None)
+        //     .unwrap()
+        //     .raw_read(&rect);
+        // let pack_bot_pixels: Vec<Vec<(i16,i16,i16,i16)>> = pack_bot
+        //     .main_level()
+        //     .first_layer()
+        //     .into_image(None)
+        //     .unwrap()
+        //     .raw_read(&rect);
+
+        // for y in 0..8 {
+        //     for x in 0..8 {
+        //         let color = if y < 4 {
+        //             pack_top_pixels[x][0]
+        //         } else {
+        //             pack_bot_pixels[x][0]
+        //         };
+        //         let val = match y {
+        //             0 => color.0,
+        //             1 => color.1,
+        //             2 => color.2,
+        //             3 => color.3,
+        //             4 => color.0,
+        //             5 => color.1,
+        //             6 => color.2,
+        //             7 => color.3,
+        //             _ => panic!("bad index"),
+        //         };
+        //         print!("{}, ", val);
+        //     }
+        //     println!("");
+        // }
+        // println!("");
 
         let uniforms_out_left = uniform! {
             tex: &pixel_texture,

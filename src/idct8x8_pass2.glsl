@@ -28,10 +28,10 @@ void idct8(out int x[8], const int y[8]) {
   t1 += (t7*6393 + 16384) >> 15;
   t7 -= (t1*3227 + 16384) >> 15;
   t1 += t3;
-  t1h = t1 >> 1;
+  t1h = t1 / 2; // could be unbiased shr
   t3 = t1h - t3;
   t5 += t7;
-  t7 = (t5 >> 1) - t7;
+  t7 = (t5 / 2) - t7; // could be unbiased shr
   t3 += (t5*7489 + 4096) >> 13;
   t5 -= (t3*11585 + 8192) >> 14;
   t3 -= (t5*19195 + 16384) >> 15;
@@ -42,27 +42,27 @@ void idct8(out int x[8], const int y[8]) {
   t4 -= (t0*11585 + 8192) >> 14;
   t0 += (t4*13573 + 16384) >> 15;
   t4 = t2 - t4;
-  t4h = t4 >> 1;
+  t4h = t4 / 2; // could be unbiased shr
   t2 = t4h - t2;
   t6 = t0 - t6;
-  t6h = t6 >> 1;
+  t6h = t6 / 2; // could be unbiased shr
   t0 -= t6h;
   t7 = t6h - t7;
   t6 -= t7;
-  t2 += t3 >> 1;
+  t2 += t3 / 2; // could be unbiased shr
   t3 = t2 - t3;
   t5 += t4h;
   t4 -= t5;
   t0 += t1h;
   t1 = t0 - t1;
   x[0] = t0;
-  x[1] = t1;
+  x[1] = t4;
   x[2] = t2;
-  x[3] = t3;
-  x[4] = t4;
-  x[5] = t5;
-  x[6] = t6;
-  x[7] = t7;
+  x[3] = t6;
+  x[4] = t7;
+  x[5] = t3;
+  x[6] = t5;
+  x[7] = t1;
 }
 
 in vec2 v_tex_coords;

@@ -243,6 +243,15 @@ int main() {
 
   /* inverse transform coeffs */
   for (i = 0; i < 8; i++) od_bin_idct8(z + i, 8, coeffs + 8*i);
+
+  printf("AFTER FIRST PASS:\n");
+  for (y = 0; y < 8; y++) {
+    for (x = 0; x < 8; x++) {
+      printf("%d, ", z[y*8 + x]);
+    }
+    printf("\n");
+  }
+
   for (i = 0; i < 8; i++) od_bin_idct8(output_pixels + i, 8, z + 8*i);
 
   printf("OUTPUT:\n");
