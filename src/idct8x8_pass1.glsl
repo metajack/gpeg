@@ -1,5 +1,8 @@
 #version 140
 
+// we want to truncate toward zero, but normal rshift truncates to -inf
+#define UNBIASED_RSHIFT1(a) (((a) - ((a) >> 31)) >> 1)
+
 // 1D iDCT takes a row and outputs a column
 void idct8(out int x[8], const int y[8]) {
   int t0;
@@ -28,10 +31,10 @@ void idct8(out int x[8], const int y[8]) {
   t1 += (t7*6393 + 16384) >> 15;
   t7 -= (t1*3227 + 16384) >> 15;
   t1 += t3;
-  t1h = t1 / 2; // could be unbiased shr
+  t1h = UNBIASED_RSHIFT1(t1);
   t3 = t1h - t3;
   t5 += t7;
-  t7 = (t5 / 2) - t7; // could be unbiased shr
+  t7 = UNBIASED_RSHIFT1(t5) - t7;
   t3 += (t5*7489 + 4096) >> 13;
   t5 -= (t3*11585 + 8192) >> 14;
   t3 -= (t5*19195 + 16384) >> 15;
@@ -42,14 +45,14 @@ void idct8(out int x[8], const int y[8]) {
   t4 -= (t0*11585 + 8192) >> 14;
   t0 += (t4*13573 + 16384) >> 15;
   t4 = t2 - t4;
-  t4h = t4 / 2; // could be unbiased shr
+  t4h = UNBIASED_RSHIFT1(t4);
   t2 = t4h - t2;
   t6 = t0 - t6;
-  t6h = t6 / 2; // could be unbiased shr
+  t6h = UNBIASED_RSHIFT1(t6);
   t0 -= t6h;
   t7 = t6h - t7;
   t6 -= t7;
-  t2 += t3 / 2; // could be unbiased shr
+  t2 += UNBIASED_RSHIFT1(t3);
   t3 = t2 - t3;
   t5 += t4h;
   t4 -= t5;
