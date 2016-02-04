@@ -72,18 +72,26 @@ in vec2 v_tex_coords;
 out ivec4 col_top;
 out ivec4 col_bot;
 
+uniform ivec2 plane_dims;
 uniform isampler2D coeffs;
 
 void main() {
   int i;
   int x[8], y[8];
-  // translate coordinates and fetch our row of texels
-  ivec2 i_tex_coords = ivec2(int(v_tex_coords.x * 8.0), int(v_tex_coords.y * 8.0));
+
+  // find our block
+  ivec2 i_tex_coords = ivec2(v_tex_coords * plane_dims);
+  ivec2 block = i_tex_coords >> 3;
+
+  // fetch our row of texels in our block
   for (i = 0; i < 8; i++) {
-    y[i] = texelFetch(coeffs, ivec2(i, i_tex_coords.y), 0).r;
+    // we have to shift up for headroom in the transform
+    y[i] = texelFetch(coeffs, ivec2((block.x << 3) + i, i_tex_coords.y), 0).r << 4;
   }
+
   // transform
   idct8(x, y);
+
   // stuff the column into our output colors
   col_top = ivec4(x[0], x[1], x[2], x[3]);
   col_bot = ivec4(x[4], x[5], x[6], x[7]);

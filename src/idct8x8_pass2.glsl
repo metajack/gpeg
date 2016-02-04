@@ -73,27 +73,34 @@ in vec2 v_tex_coords;
 out ivec4 pack_top;
 out ivec4 pack_bot;
 
+uniform ivec2 plane_dims;
 uniform isampler2D col_top;
 uniform isampler2D col_bot;
 
 void main() {
   int i;
   int x[8], y[8];
-  // translate coordinates and fetch our row of values.
+
+  // find our block and offset
+  ivec2 i_tex_coords = ivec2(v_tex_coords * plane_dims);
+  ivec2 block = i_tex_coords >> 3;
+  ivec2 offset = i_tex_coords % 8;
+  
   // every column of texels has the output from one row of the previous pass.
   // we need the ith component from each rows output.
-  ivec2 i_tex_coords = ivec2(int(v_tex_coords.x * 8.0), int(v_tex_coords.y * 8.0));
-  if (i_tex_coords.y < 4) {
+  if (offset.y < 4) {
     for (i = 0; i < 8; i++) {
-      y[i] = texelFetch(col_top, ivec2(i_tex_coords.x, i), 0)[i_tex_coords.y];
+      y[i] = texelFetch(col_top, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y];
     }
   } else {
     for (i = 0; i < 8; i++) {
-      y[i] = texelFetch(col_bot, ivec2(i_tex_coords.x, i), 0)[i_tex_coords.y - 4];
+      y[i] = texelFetch(col_bot, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y - 4];
     }
   }
+  
   // transform
   idct8(x, y);
+
   // stuff the column into our output colors
   pack_top = ivec4(x[0], x[1], x[2], x[3]);
   pack_bot = ivec4(x[4], x[5], x[6], x[7]);

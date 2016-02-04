@@ -4,16 +4,25 @@ in vec2 v_tex_coords;
 
 out int color;
 
+uniform ivec2 plane_dims;
 uniform isampler2D pack_top;
 uniform isampler2D pack_bot;
 
 void main() {
   int c;
-  ivec2 i_tex_coords = ivec2(int(v_tex_coords.x * 8.0), int(v_tex_coords.y * 8.0));
-  if (i_tex_coords.y < 4) {
-    c = texelFetch(pack_top, ivec2(i_tex_coords.x, i_tex_coords.x), 0)[i_tex_coords.y];
+
+  // find our block and offset
+  ivec2 i_tex_coords = ivec2(v_tex_coords * plane_dims);
+  ivec2 block = i_tex_coords >> 3;
+  ivec2 offset = i_tex_coords % 8;
+
+  // unpack the pixel value
+  if (offset.y < 4) {
+    c = texelFetch(pack_top, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y];
   } else {
-    c = texelFetch(pack_bot, ivec2(i_tex_coords.x, i_tex_coords.x), 0)[i_tex_coords.y - 4];
+    c = texelFetch(pack_bot, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y - 4];
   }
+
+  // shift back down post transform
   color = c >> 4;
 }
