@@ -69,11 +69,12 @@ void idct8(out int x[8], const int y[8]) {
 }
 
 in vec2 v_tex_coords;
-out ivec4 col_top;
-out ivec4 col_bot;
+
+out ivec4 pass1_top;
+out ivec4 pass1_bot;
 
 uniform ivec2 plane_dims;
-uniform isampler2D coeffs;
+uniform isampler2D data;
 
 void main() {
   int i;
@@ -86,13 +87,13 @@ void main() {
   // fetch our row of texels in our block
   for (i = 0; i < 8; i++) {
     // we have to shift up for headroom in the transform
-    y[i] = texelFetch(coeffs, ivec2((block.x << 3) + i, i_tex_coords.y), 0).r << 4;
+    y[i] = texelFetch(data, ivec2((block.x << 3) + i, i_tex_coords.y), 0).r << 4;
   }
 
   // transform
   idct8(x, y);
 
   // stuff the column into our output colors
-  col_top = ivec4(x[0], x[1], x[2], x[3]);
-  col_bot = ivec4(x[4], x[5], x[6], x[7]);
+  pass1_top = ivec4(x[0], x[1], x[2], x[3]);
+  pass1_bot = ivec4(x[4], x[5], x[6], x[7]);
 }

@@ -70,12 +70,12 @@ void idct8(out int x[8], const int y[8]) {
 
 in vec2 v_tex_coords;
 
-out ivec4 pack_top;
-out ivec4 pack_bot;
+out ivec4 pass2_top;
+out ivec4 pass2_bot;
 
 uniform ivec2 plane_dims;
-uniform isampler2D col_top;
-uniform isampler2D col_bot;
+uniform isampler2D pass1_top;
+uniform isampler2D pass1_bot;
 
 void main() {
   int i;
@@ -90,11 +90,11 @@ void main() {
   // we need the ith component from each rows output.
   if (offset.y < 4) {
     for (i = 0; i < 8; i++) {
-      y[i] = texelFetch(col_top, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y];
+      y[i] = texelFetch(pass1_top, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y];
     }
   } else {
     for (i = 0; i < 8; i++) {
-      y[i] = texelFetch(col_bot, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y - 4];
+      y[i] = texelFetch(pass1_bot, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y - 4];
     }
   }
   
@@ -102,6 +102,6 @@ void main() {
   idct8(x, y);
 
   // stuff the column into our output colors
-  pack_top = ivec4(x[0], x[1], x[2], x[3]);
-  pack_bot = ivec4(x[4], x[5], x[6], x[7]);
+  pass2_top = ivec4(x[0], x[1], x[2], x[3]);
+  pass2_bot = ivec4(x[4], x[5], x[6], x[7]);
 }

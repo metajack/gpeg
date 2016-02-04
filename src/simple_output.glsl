@@ -2,14 +2,10 @@
 
 in vec2 v_tex_coords;
 
-out vec4 color;
+out vec3 color;
 
-uniform ivec2 plane_dims;
-uniform isampler2D tex;
+uniform sampler2D tex;
 
 void main() {
-  ivec2 i_tex_coords = ivec2(v_tex_coords * plane_dims);
-  ivec4 texel = texelFetch(tex, i_tex_coords, 0);
-  float r = (float(texel.r) + 128.0) / 256.0;
-  color = vec4(r, r, r, 1.0);
+  color = texture(tex, v_tex_coords).rgb;
 }

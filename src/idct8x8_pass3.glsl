@@ -5,8 +5,8 @@ in vec2 v_tex_coords;
 out int color;
 
 uniform ivec2 plane_dims;
-uniform isampler2D pack_top;
-uniform isampler2D pack_bot;
+uniform isampler2D pass2_top;
+uniform isampler2D pass2_bot;
 
 void main() {
   int c;
@@ -18,9 +18,9 @@ void main() {
 
   // unpack the pixel value
   if (offset.y < 4) {
-    c = texelFetch(pack_top, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y];
+    c = texelFetch(pass2_top, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y];
   } else {
-    c = texelFetch(pack_bot, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y - 4];
+    c = texelFetch(pass2_bot, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y - 4];
   }
 
   // shift back down post transform
