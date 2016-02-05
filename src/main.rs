@@ -53,14 +53,34 @@ impl DecodeContext {
         let fragment_shader_pass2_src = include_str!("idct8x8_pass2.glsl");
         let fragment_shader_pass3_src = include_str!("idct8x8_pass3.glsl");
         let fragment_shader_convert_src = include_str!("convert.glsl");
-        let program_pass1 = glium::Program::from_source(&facade, vertex_shader_src,
-                                                        fragment_shader_pass1_src, None).unwrap();
-        let program_pass2 = glium::Program::from_source(&facade, vertex_shader_src,
-                                                        fragment_shader_pass2_src, None).unwrap();
-        let program_pass3 = glium::Program::from_source(&facade, vertex_shader_src,
-                                                        fragment_shader_pass3_src, None).unwrap();
-        let program_convert = glium::Program::from_source(&facade, vertex_shader_src,
-                                                          fragment_shader_convert_src, None).unwrap();
+        let program_pass1 = program!(
+            &facade,
+            140 => {
+                vertex: vertex_shader_src,
+                fragment: fragment_shader_pass1_src,
+            }
+        ).unwrap();
+        let program_pass2 = program!(
+            &facade,
+            140 => {
+                vertex: vertex_shader_src,
+                fragment: fragment_shader_pass2_src,
+            }
+        ).unwrap();
+        let program_pass3 = program!(
+            &facade,
+            140 => {
+                vertex: vertex_shader_src,
+                fragment: fragment_shader_pass3_src,
+            }
+        ).unwrap();
+        let program_convert = program!(
+            &facade,
+            140 => {
+                vertex: vertex_shader_src,
+                fragment: fragment_shader_convert_src,
+            }
+        ).unwrap();
         let pass1_top = glium::texture::IntegralTexture2d::empty_with_format(
             &facade,
             glium::texture::UncompressedIntFormat::I16I16I16I16,
@@ -226,7 +246,7 @@ fn main() {
         let output: Vec<_> = planes.iter().map(|p| decode_plane(&ctx, p)).collect();
 
         let image = convert_planes(&ctx, 1024, 576, &output);
-        
+
         // 16:9
         let v1 = Vertex { position: [-0.75, -0.09375], tex_coords: [0.0, 1.0] };
         let v2 = Vertex { position: [-0.75, 0.75], tex_coords: [0.0, 0.0] };
@@ -238,8 +258,14 @@ fn main() {
 
         let vertex_shader_src = include_str!("simple_vertex.glsl");
         let fragment_shader_src = include_str!("simple_output.glsl");
-        let program = glium::Program::from_source(
-            &display, vertex_shader_src, fragment_shader_src, None).unwrap();
+        let program = program!(
+            &display,
+            140 => {
+                vertex: vertex_shader_src,
+                fragment: fragment_shader_src,
+                outputs_srgb: true,
+            }
+        ).unwrap();
 
 
         let uniforms = uniform! {
