@@ -18,7 +18,10 @@ implement_vertex!(Vertex, position, tex_coords);
 
 struct DecodeContext {
     facade: Rc<glium::backend::Context>,
+    width: u32,
+    height: u32,
     vertices: glium::vertex::VertexBuffer<Vertex>,
+    vertices_dec: glium::vertex::VertexBuffer<Vertex>,
     program_pass1: glium::program::Program,
     program_pass2: glium::program::Program,
     program_pass3: glium::program::Program,
@@ -37,6 +40,13 @@ impl DecodeContext {
         let v4 = Vertex { position: [1.0, 1.0], tex_coords: [1.0, 1.0] };
         let strip = vec![v1, v2, v3, v4];
         let vertices = glium::VertexBuffer::new(&facade, &strip).unwrap();
+
+        let v1 = Vertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] };
+        let v2 = Vertex { position: [-1.0, 0.0], tex_coords: [0.0, 1.0] };
+        let v3 = Vertex { position: [0.0, -1.0], tex_coords: [1.0, 0.0] };
+        let v4 = Vertex { position: [0.0, 0.0], tex_coords: [1.0, 1.0] };
+        let strip = vec![v1, v2, v3, v4];
+        let vertices_dec = glium::VertexBuffer::new(&facade, &strip).unwrap();
 
         let vertex_shader_src = include_str!("simple_vertex.glsl");
         let fragment_shader_pass1_src = include_str!("idct8x8_pass1.glsl");
@@ -74,7 +84,10 @@ impl DecodeContext {
 
         DecodeContext {
             facade: facade,
+            width: width,
+            height: height,
             vertices: vertices,
+            vertices_dec: vertices_dec,
             program_pass1: program_pass1,
             program_pass2: program_pass2,
             program_pass3: program_pass3,
@@ -95,6 +108,11 @@ struct Plane {
 
 fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralTexture2d {
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
+    let vertices = if plane.width == ctx.width && plane.height == ctx.height {
+        &ctx.vertices
+    } else {
+        &ctx.vertices_dec
+    };
     let data_image = glium::texture::RawImage2d {
         data: Cow::Borrowed(&plane.data),
         width: plane.width,
@@ -118,7 +136,7 @@ fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralT
         let mut target1 = glium::framebuffer::MultiOutputFrameBuffer::new(
             &ctx.facade,
             output_pass1.iter().cloned()).unwrap();
-        target1.draw(&ctx.vertices, &indices, &ctx.program_pass1, &uniforms_pass1,
+        target1.draw(vertices, &indices, &ctx.program_pass1, &uniforms_pass1,
                      &Default::default()).unwrap();
     }
     let uniforms_pass2 = uniform! {
@@ -133,7 +151,7 @@ fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralT
     let mut target2 = glium::framebuffer::MultiOutputFrameBuffer::new(
         &ctx.facade,
         output_pass2.iter().cloned()).unwrap();
-    target2.draw(&ctx.vertices, &indices, &ctx.program_pass2, &uniforms_pass2,
+    target2.draw(vertices, &indices, &ctx.program_pass2, &uniforms_pass2,
                  &Default::default()).unwrap();
     let uniforms_pass3 = uniform! {
         plane_dims: [plane.width as i32, plane.height as i32],
@@ -142,7 +160,7 @@ fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralT
     };
     {
         let mut target3 = glium::framebuffer::SimpleFrameBuffer::new(&ctx.facade, &data_texture).unwrap();
-        target3.draw(&ctx.vertices, &indices, &ctx.program_pass3, &uniforms_pass3,
+        target3.draw(vertices, &indices, &ctx.program_pass3, &uniforms_pass3,
                      &Default::default()).unwrap();
     }
     data_texture
@@ -181,7 +199,7 @@ fn read_data(file: &str) -> Vec<i16> {
 }
 
 fn main() {
-    let display = glium::glutin::WindowBuilder::new().build_glium().unwrap();
+    let display = glium::glutin::WindowBuilder::new().with_dimensions(1024, 1024).build_glium().unwrap();
     loop {
         let y_plane = Plane {
             width: 1024,
