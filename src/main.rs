@@ -1,9 +1,9 @@
 #[macro_use]
 extern crate glium;
+extern crate gpeg;
 
+use gpeg::{read_data, Plane};
 use std::borrow::Cow;
-use std::fs::File;
-use std::io::Read;
 use std::rc::Rc;
 use glium::{DisplayBuild, Surface};
 use glium::backend::Facade;
@@ -123,12 +123,6 @@ impl DecodeContext {
     }
 }
 
-struct Plane {
-    width: u32,
-    height: u32,
-    data: Vec<i16>,
-}
-
 fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralTexture2d {
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
     let vertices = if plane.width == ctx.width && plane.height == ctx.height {
@@ -210,15 +204,6 @@ fn convert_planes(ctx: &DecodeContext, width: u32, height: u32,
                     &Default::default()).unwrap();
     }
     output
-}
-
-fn read_data(file: &str) -> Vec<i16> {
-        let mut f = File::open(file).unwrap();
-        let mut s = String::new();
-        f.read_to_string(&mut s).unwrap();
-        s.split_whitespace()
-            .map(|coeff_str| i16::from_str_radix(coeff_str, 10).unwrap())
-            .collect()
 }
 
 fn main() {
