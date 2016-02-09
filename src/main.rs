@@ -81,26 +81,29 @@ impl DecodeContext {
                 fragment: fragment_shader_convert_src,
             }
         ).unwrap();
+
+        // the intermediate textures can be width/8 because we only need hte
+        // first column of each block
         let pass1_top = glium::texture::IntegralTexture2d::empty_with_format(
             &facade,
             glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
-            width, height).unwrap();
+            width / 8, height).unwrap();
         let pass1_bot = glium::texture::IntegralTexture2d::empty_with_format(
             &facade,
             glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
-            width, height).unwrap();
+            width / 8, height).unwrap();
         let pass2_top = glium::texture::IntegralTexture2d::empty_with_format(
             &facade,
             glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
-            width, height).unwrap();
+            width / 8, height).unwrap();
         let pass2_bot = glium::texture::IntegralTexture2d::empty_with_format(
             &facade,
             glium::texture::UncompressedIntFormat::I16I16I16I16,
             glium::texture::MipmapsOption::NoMipmap,
-            width, height).unwrap();
+            width / 8, height).unwrap();
 
         DecodeContext {
             facade: facade,

@@ -18,9 +18,9 @@ void main() {
 
   // unpack the pixel value
   if (offset.y < 4) {
-    c = texelFetch(pass2_top, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y];
+    c = texelFetch(pass2_top, ivec2(block.x, (block.y << 3) + offset.x), 0)[offset.y];
   } else {
-    c = texelFetch(pass2_bot, ivec2(i_tex_coords.x, (block.y << 3) + offset.x), 0)[offset.y - 4];
+    c = texelFetch(pass2_bot, ivec2(block.x, (block.y << 3) + offset.x), 0)[offset.y - 4];
   }
 
   // shift back down post transform

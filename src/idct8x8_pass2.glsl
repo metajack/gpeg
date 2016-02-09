@@ -90,11 +90,11 @@ void main() {
   // we need the ith component from each rows output.
   if (offset.y < 4) {
     for (i = 0; i < 8; i++) {
-      y[i] = texelFetch(pass1_top, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y];
+      y[i] = texelFetch(pass1_top, ivec2(block.x, (block.y << 3) + i), 0)[offset.y];
     }
   } else {
     for (i = 0; i < 8; i++) {
-      y[i] = texelFetch(pass1_bot, ivec2(i_tex_coords.x, (block.y << 3) + i), 0)[offset.y - 4];
+      y[i] = texelFetch(pass1_bot, ivec2(block.x, (block.y << 3) + i), 0)[offset.y - 4];
     }
   }
   
