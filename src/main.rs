@@ -2,26 +2,35 @@
 extern crate glium;
 extern crate gpeg;
 
-use gpeg::{read_data, Plane};
+use gpeg::{pack_coeffs, read_data, Plane};
 use std::borrow::Cow;
 use std::rc::Rc;
 use glium::{DisplayBuild, Surface};
 use glium::backend::Facade;
 
 #[derive(Copy, Clone)]
-struct Vertex {
+struct QuadVertex {
     position: [f32; 2],
     tex_coords: [f32; 2],
 }
 
-implement_vertex!(Vertex, position, tex_coords);
+implement_vertex!(QuadVertex, position, tex_coords);
+
+#[derive(Copy, Clone)]
+struct BlockVertex {
+    position: [f32; 2],
+}
+
+implement_vertex!(BlockVertex, position);
 
 struct DecodeContext {
     facade: Rc<glium::backend::Context>,
     width: u32,
     height: u32,
-    vertices: glium::vertex::VertexBuffer<Vertex>,
-    vertices_dec: glium::vertex::VertexBuffer<Vertex>,
+    block_vertices: glium::vertex::VertexBuffer<BlockVertex>,
+    block_vertices_dec: glium::vertex::VertexBuffer<BlockVertex>,
+    quad_vertices: glium::vertex::VertexBuffer<QuadVertex>,
+    quad_vertices_dec: glium::vertex::VertexBuffer<QuadVertex>,
     program_pass1: glium::program::Program,
     program_pass2: glium::program::Program,
     program_pass3: glium::program::Program,
@@ -34,19 +43,26 @@ struct DecodeContext {
 
 impl DecodeContext {
     pub fn new(facade: Rc<glium::backend::Context>, width: u32, height: u32) -> DecodeContext {
-        let v1 = Vertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] };
-        let v2 = Vertex { position: [-1.0, 1.0], tex_coords: [0.0, 1.0] };
-        let v3 = Vertex { position: [1.0, -1.0], tex_coords: [1.0, 0.0] };
-        let v4 = Vertex { position: [1.0, 1.0], tex_coords: [1.0, 1.0] };
+        let block_vertices = glium::VertexBuffer::new(
+            &facade,
+            &make_block_vertices(width >> 3, height >> 3)).unwrap();
+        let block_vertices_dec = glium::VertexBuffer::new(
+            &facade,
+            &make_block_vertices(width >> 4, height >> 4)).unwrap();
+        
+        let v1 = QuadVertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] };
+        let v2 = QuadVertex { position: [-1.0, 1.0], tex_coords: [0.0, 1.0] };
+        let v3 = QuadVertex { position: [1.0, -1.0], tex_coords: [1.0, 0.0] };
+        let v4 = QuadVertex { position: [1.0, 1.0], tex_coords: [1.0, 1.0] };
         let strip = vec![v1, v2, v3, v4];
-        let vertices = glium::VertexBuffer::new(&facade, &strip).unwrap();
+        let quad_vertices = glium::VertexBuffer::new(&facade, &strip).unwrap();
 
-        let v1 = Vertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] };
-        let v2 = Vertex { position: [-1.0, 0.0], tex_coords: [0.0, 1.0] };
-        let v3 = Vertex { position: [0.0, -1.0], tex_coords: [1.0, 0.0] };
-        let v4 = Vertex { position: [0.0, 0.0], tex_coords: [1.0, 1.0] };
+        let v1 = QuadVertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] };
+        let v2 = QuadVertex { position: [-1.0, 0.0], tex_coords: [0.0, 1.0] };
+        let v3 = QuadVertex { position: [0.0, -1.0], tex_coords: [1.0, 0.0] };
+        let v4 = QuadVertex { position: [0.0, 0.0], tex_coords: [1.0, 1.0] };
         let strip = vec![v1, v2, v3, v4];
-        let vertices_dec = glium::VertexBuffer::new(&facade, &strip).unwrap();
+        let quad_vertices_dec = glium::VertexBuffer::new(&facade, &strip).unwrap();
 
         let vertex_shader_src = include_str!("simple_vertex.glsl");
         let fragment_shader_pass1_src = include_str!("idct8x8_pass1.glsl");
@@ -109,8 +125,10 @@ impl DecodeContext {
             facade: facade,
             width: width,
             height: height,
-            vertices: vertices,
-            vertices_dec: vertices_dec,
+            block_vertices: block_vertices,
+            block_vertices_dec: block_vertices_dec,
+            quad_vertices: quad_vertices,
+            quad_vertices_dec: quad_vertices_dec,
             program_pass1: program_pass1,
             program_pass2: program_pass2,
             program_pass3: program_pass3,
@@ -126,9 +144,9 @@ impl DecodeContext {
 fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralTexture2d {
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
     let vertices = if plane.width == ctx.width && plane.height == ctx.height {
-        &ctx.vertices
+        &ctx.quad_vertices
     } else {
-        &ctx.vertices_dec
+        &ctx.quad_vertices_dec
     };
     let data_image = glium::texture::RawImage2d {
         data: Cow::Borrowed(&plane.data),
@@ -200,28 +218,43 @@ fn convert_planes(ctx: &DecodeContext, width: u32, height: u32,
     };
     {
         let mut target = glium::framebuffer::SimpleFrameBuffer::new( &ctx.facade, &output).unwrap();
-        target.draw(&ctx.vertices, &indices, &ctx.program_convert, &uniforms,
+        target.draw(&ctx.quad_vertices, &indices, &ctx.program_convert, &uniforms,
                     &Default::default()).unwrap();
     }
     output
 }
 
+fn make_block_vertices(width: u32, height: u32) -> Vec<BlockVertex> {
+    let mut vertices: Vec<BlockVertex> = Vec::with_capacity((width * height) as usize);
+    for j in 0..width {
+        for i in 0..height {
+            vertices.push(BlockVertex {
+                position: [i as f32 / width as f32, j as f32 / height as f32],
+            });
+        }
+    }
+    vertices
+}
+
 fn main() {
     let display = glium::glutin::WindowBuilder::new().with_dimensions(1024, 1024).build_glium().unwrap();
     loop {
+        let width = 1024;
+        let height = 576;
+
         let y_plane = Plane {
-            width: 1024,
-            height: 576,
+            width: width,
+            height: height,
             data: read_data("f1.Y"),
         };
         let cb_plane = Plane {
-            width: 512,
-            height: 288,
+            width: width / 2,
+            height: height / 2,
             data: read_data("f1.Cb"),
         };
         let cr_plane = Plane {
-            width: 512,
-            height: 288,
+            width: width / 2,
+            height: height / 2,
             data: read_data("f1.Cr"),
         };
 
@@ -231,15 +264,49 @@ fn main() {
 
         let ctx = DecodeContext::new(display.get_context().clone(), y_plane.width, y_plane.height);
         let planes = vec![y_plane, cb_plane, cr_plane];
+
+        let (mut packed_coeffs, pack_indices) = pack_coeffs(planes[0].width, planes[0].height, &planes[0].data);
+        let packed_index_buffer = unsafe {
+            let bindings = Cow::Owned(vec![
+                (Cow::Borrowed("pack_index"), 0, glium::vertex::AttributeType::U32)
+            ]);
+            glium::VertexBuffer::new_raw(&ctx.facade,
+                                         &pack_indices,
+                                         bindings,
+                                         ::std::mem::size_of::<u32>())
+        };
+
+        let overage = packed_coeffs.len() % 512;
+        if overage > 0 {
+            let extra = 512 - overage;
+            packed_coeffs.reserve(extra);
+            for _ in 0..extra {
+                packed_coeffs.push(0);
+            }
+        }
+        let packed_image = glium::texture::RawImage2d {
+            data: Cow::Borrowed(&packed_coeffs),
+            width: 512,
+            height: (packed_coeffs.len() / 512) as u32,
+            format: glium::texture::ClientFormat::U16,
+        };
+        println!("packed image 1d width = {}", packed_coeffs.len());
+        let packed_texture = glium::texture::UnsignedTexture2d::with_format(
+            &ctx.facade,
+            packed_image,
+            glium::texture::UncompressedUintFormat::U16,
+            glium::texture::MipmapsOption::NoMipmap).unwrap();
+            
+
         let output: Vec<_> = planes.iter().map(|p| decode_plane(&ctx, p)).collect();
 
         let image = convert_planes(&ctx, 1024, 576, &output);
 
         // 16:9
-        let v1 = Vertex { position: [-0.75, -0.09375], tex_coords: [0.0, 1.0] };
-        let v2 = Vertex { position: [-0.75, 0.75], tex_coords: [0.0, 0.0] };
-        let v3 = Vertex { position: [0.75, -0.09375], tex_coords: [1.0, 1.0] };
-        let v4 = Vertex { position: [0.75, 0.75], tex_coords: [1.0, 0.0] };
+        let v1 = QuadVertex { position: [-0.75, -0.09375], tex_coords: [0.0, 1.0] };
+        let v2 = QuadVertex { position: [-0.75, 0.75], tex_coords: [0.0, 0.0] };
+        let v3 = QuadVertex { position: [0.75, -0.09375], tex_coords: [1.0, 1.0] };
+        let v4 = QuadVertex { position: [0.75, 0.75], tex_coords: [1.0, 0.0] };
         let strip = vec![v1, v2, v3, v4];
         let vertices = glium::VertexBuffer::new(&display, &strip).unwrap();
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
