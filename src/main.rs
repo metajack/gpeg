@@ -140,21 +140,55 @@ fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralT
     } else {
         &ctx.vertices_dec
     };
-    let data_image = glium::texture::RawImage2d {
-        data: Cow::Borrowed(&plane.data),
-        width: plane.width,
-        height: plane.height,
-        format: glium::texture::ClientFormat::I16,
+
+    let index_image = glium::texture::RawImage2d {
+        data: Cow::Borrowed(&plane.packed_indices),
+        width: plane.width >> 3,
+        height: plane.height >> 3,
+        format: glium::texture::ClientFormat::U32,
     };
-    let data_texture = glium::texture::IntegralTexture2d::with_format(
+    let index_texture = glium::texture::UnsignedTexture2d::with_format(
         &ctx.facade,
-        data_image,
-        glium::texture::UncompressedIntFormat::I16,
+        index_image,
+        glium::texture::UncompressedUintFormat::U32,
         glium::texture::MipmapsOption::NoMipmap).unwrap();
+    let packed_image = glium::texture::RawImage2d {
+        data: Cow::Borrowed(&plane.packed_coeffs),
+        width: 512,
+        height: (plane.packed_coeffs.len() >> 9) as u32,
+        format: glium::texture::ClientFormat::U16,
+    };
+    let packed_texture = glium::texture::UnsignedTexture2d::with_format(
+        &ctx.facade,
+        packed_image,
+        glium::texture::UncompressedUintFormat::U16,
+        glium::texture::MipmapsOption::NoMipmap).unwrap();
+
+    let output_unpack = glium::texture::IntegralTexture2d::empty_with_format(
+        &ctx.facade,
+        glium::texture::UncompressedIntFormat::I16,
+        glium::texture::MipmapsOption::NoMipmap,
+        plane.width, plane.height).unwrap();
+    let uniforms_unpack = uniform! {
+        plane_dims: [plane.width as i32, plane.height as i32],
+        index_texture: &index_texture,
+        packed_coeffs: &packed_texture,
+    };
+    {
+        let mut target_unpack = glium::framebuffer::SimpleFrameBuffer::new(
+            &ctx.facade,
+            &output_unpack).unwrap();
+        target_unpack.draw(
+            &ctx.vertices,
+            &indices,
+            &ctx.program_unpack,
+            &uniforms_unpack,
+            &Default::default()).unwrap();
+    }
     {
         let uniforms_pass1 = uniform! {
             plane_dims: [plane.width as i32, plane.height as i32],
-            data: &data_texture,
+            data: &output_unpack,
         };
         let output_pass1 = [
             ("pass1_top", &ctx.pass1_top),
@@ -186,11 +220,13 @@ fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralT
         pass2_bot: &ctx.pass2_bot,
     };
     {
-        let mut target3 = glium::framebuffer::SimpleFrameBuffer::new(&ctx.facade, &data_texture).unwrap();
+        let mut target3 = glium::framebuffer::SimpleFrameBuffer::new(
+            &ctx.facade,
+            &output_unpack).unwrap();
         target3.draw(vertices, &indices, &ctx.program_pass3, &uniforms_pass3,
                      &Default::default()).unwrap();
     }
-    data_texture
+    output_unpack
 }
 
 fn convert_planes(ctx: &DecodeContext, width: u32, height: u32,
@@ -222,113 +258,24 @@ fn main() {
         let width = 1024;
         let height = 576;
 
-        let y_plane = Plane {
-            width: width,
-            height: height,
-            data: read_data("f1.Y"),
-        };
-        let cb_plane = Plane {
-            width: width / 2,
-            height: height / 2,
-            data: read_data("f1.Cb"),
-        };
-        let cr_plane = Plane {
-            width: width / 2,
-            height: height / 2,
-            data: read_data("f1.Cr"),
-        };
+        let raw_planes = vec![(width, height, "f1.Y"),
+                              (width >> 1, height >> 1, "f1.Cb"),
+                              (width >> 1, height >> 1, "f1.Cr")];
+        let planes: Vec<Plane> = raw_planes.iter().map(|&(w, h, f)| {
+                let data = read_data(f);
+                assert!((w * h) as usize == data.len());
+                let (packed_coeffs, packed_indices) = pack_coeffs(w, h, &data);
+                Plane {
+                    width: w,
+                    height: h,
+                    packed_coeffs: packed_coeffs,
+                    packed_indices: packed_indices,
+                }
+        }).collect();
 
-        assert!((y_plane.width * y_plane.height) as usize == y_plane.data.len());
-        assert!((cb_plane.width * cb_plane.height) as usize == cb_plane.data.len());
-        assert!((cr_plane.width * cr_plane.height) as usize == cr_plane.data.len());
-
-        let ctx = DecodeContext::new(display.get_context().clone(), y_plane.width, y_plane.height);
-        let planes = vec![y_plane, cb_plane, cr_plane];
-
-        let (mut packed_coeffs, pack_indices) = pack_coeffs(planes[0].width, planes[0].height, &planes[0].data);
-        let overage = packed_coeffs.len() % 512;
-        let unpacked: Vec<(u16, i16)> = packed_coeffs[0..10].iter().map(|&p| {
-                let zeros: u16 = (p >> 12) & 0xf;
-                let coeff: i16 = if p & 0x800 == 0x800 {
-                    ((p & 0xfff) | 0xf000) as i16
-                } else {
-                    (p & 0xfff) as i16
-                };
-                (zeros, coeff)
-            }).collect();
-        for i in 0..8 {
-            println!("{:?}", &planes[0].data[i*1024..i*1024 + 8]);
-        }
-        println!("{:?}", &packed_coeffs[0..10]);
-        println!("{:?}", unpacked);
-        if overage > 0 {
-            let extra = 512 - overage;
-            packed_coeffs.reserve(extra);
-            for _ in 0..extra {
-                packed_coeffs.push(0);
-            }
-        }
-        let index_image = glium::texture::RawImage2d {
-            data: Cow::Borrowed(&pack_indices),
-            width: planes[0].width >> 3,
-            height: planes[0].height >> 3,
-            format: glium::texture::ClientFormat::U32,
-        };
-        let index_texture = glium::texture::UnsignedTexture2d::with_format(
-            &ctx.facade,
-            index_image,
-            glium::texture::UncompressedUintFormat::U32,
-            glium::texture::MipmapsOption::NoMipmap).unwrap();
-        let packed_image = glium::texture::RawImage2d {
-            data: Cow::Borrowed(&packed_coeffs),
-            width: 512,
-            height: (packed_coeffs.len() >> 9) as u32,
-            format: glium::texture::ClientFormat::U16,
-        };
-        let packed_texture = glium::texture::UnsignedTexture2d::with_format(
-            &ctx.facade,
-            packed_image,
-            glium::texture::UncompressedUintFormat::U16,
-            glium::texture::MipmapsOption::NoMipmap).unwrap();
-
-        let output_unpack = glium::texture::IntegralTexture2d::empty_with_format(
-            &ctx.facade,
-            glium::texture::UncompressedIntFormat::I16,
-            glium::texture::MipmapsOption::NoMipmap,
-            planes[0].width, planes[0].height).unwrap();
-        let uniforms_unpack = uniform! {
-            plane_dims: [planes[0].width as i32, planes[0].height as i32],
-            index_texture: &index_texture,
-            packed_coeffs: &packed_texture,
-        };
-        let mut target_unpack = glium::framebuffer::SimpleFrameBuffer::new(
-            &ctx.facade,
-            &output_unpack).unwrap();
-        target_unpack.draw(
-            &ctx.vertices,
-            &glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip),
-            &ctx.program_unpack,
-            &uniforms_unpack,
-            &Default::default()).unwrap();
-
-        let rect = glium::Rect { left: 0, bottom: 0, width: 8, height: 8 };
-        let coeffs_pixels: Vec<Vec<i16>> = output_unpack
-            .main_level()
-            .first_layer()
-            .into_image(None)
-            .unwrap()
-            .raw_read(&rect);
-        for y in 0..8 {
-            for x in 0..8 {
-                print!("{} ", coeffs_pixels[0][y*8 + x]);
-            }
-            println!("");
-        }
-        
-
+        let ctx = DecodeContext::new(display.get_context().clone(), width, height);
         let output: Vec<_> = planes.iter().map(|p| decode_plane(&ctx, p)).collect();
-
-        let image = convert_planes(&ctx, 1024, 576, &output);
+        let image = convert_planes(&ctx, width, height, &output);
 
         // 16:9
         let v1 = Vertex { position: [-0.75, -0.09375], tex_coords: [0.0, 1.0] };

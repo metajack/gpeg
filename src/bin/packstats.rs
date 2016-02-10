@@ -12,13 +12,13 @@ fn main() {
             data: read_data("f1.Y"),
         },
         Plane {
-            width: width,
-            height: height,
+            width: width / 2,
+            height: height / 2,
             data: read_data("f1.Cb"),
         },
         Plane {
-            width: width,
-            height: height,
+            width: width / 2,
+            height: height / 2,
             data: read_data("f1.Cr"),
         },
     ];
@@ -30,9 +30,9 @@ fn main() {
         let num_blocks = (plane.width >> 3) * (plane.height >> 3);
         let unpacked_size = num_blocks * 64 * 2;
 
-        println!("total blocks: {}", num_blocks);
-        println!("raw size: {}", unpacked_size);
-        println!("packed size: {}", packed_coeffs * 2);
-        println!("% of original size: {:.2}%", ((packed_coeffs * 2) as f32) / (unpacked_size as f32) * 100f32);
+        println!("plane {}: total blocks: {}", plane_i, num_blocks);
+        println!("plane {}: raw size: {}", plane_i, unpacked_size);
+        println!("plane {}: packed size: {}", plane_i, packed_coeffs * 2);
+        println!("plane {}: % of original size: {:.2}%", plane_i, ((packed_coeffs * 2) as f32) / (unpacked_size as f32) * 100f32);
     }
 }
