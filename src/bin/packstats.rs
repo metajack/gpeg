@@ -25,7 +25,7 @@ fn main() {
 
     let mut packed_coeffs = 0;
     for (plane_i, plane) in planes.iter().enumerate() {
-        let packed = pack_coeffs(plane.width, plane.height, &plane.data);
+        let (packed, _) = pack_coeffs(plane.width, plane.height, &plane.data);
         packed_coeffs += packed.len();
         let num_blocks = (plane.width >> 3) * (plane.height >> 3);
         let unpacked_size = num_blocks * 64 * 2;
