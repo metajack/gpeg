@@ -5,3 +5,4 @@ authors = ["Jack Moffitt <jack@metajack.im>"]
 
 [dependencies]
 glium = "0.13"
+clap = "2.0"
