@@ -49,12 +49,12 @@ impl DecodeContext {
         let strip = vec![v1, v2, v3, v4];
         let vertices_dec = glium::VertexBuffer::new(&facade, &strip).unwrap();
 
-        let vertex_shader_src = include_str!("vert_thru.glsl");
-        let fragment_shader_unpack_src = include_str!("frag_unpack.glsl");
-        let fragment_shader_pass1_src = include_str!("idct8x8_pass1.glsl");
-        let fragment_shader_pass2_src = include_str!("idct8x8_pass2.glsl");
-        let fragment_shader_pass3_src = include_str!("idct8x8_pass3.glsl");
-        let fragment_shader_convert_src = include_str!("convert.glsl");
+        let vertex_shader_src = include_str!("thru.vs.glsl");
+        let fragment_shader_unpack_src = include_str!("unpack.fs.glsl");
+        let fragment_shader_pass1_src = include_str!("idct8x8_pass1.fs.glsl");
+        let fragment_shader_pass2_src = include_str!("idct8x8_pass2.fs.glsl");
+        let fragment_shader_pass3_src = include_str!("idct8x8_pass3.fs.glsl");
+        let fragment_shader_convert_src = include_str!("convert.fs.glsl");
         let program_unpack = program!(
             &facade,
             140 => {
@@ -280,8 +280,8 @@ fn main() {
         let vertices = glium::VertexBuffer::new(&display, &strip).unwrap();
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleStrip);
 
-        let vertex_shader_src = include_str!("vert_thru.glsl");
-        let fragment_shader_src = include_str!("simple_output.glsl");
+        let vertex_shader_src = include_str!("thru.vs.glsl");
+        let fragment_shader_src = include_str!("simple.fs.glsl");
         let program = program!(
             &display,
             140 => {
