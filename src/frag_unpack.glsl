@@ -6,7 +6,7 @@ out int color;
 
 uniform ivec2 plane_dims;
 uniform usampler2D index_texture;
-uniform usampler2D packed_coeffs;
+uniform usamplerBuffer packed_coeffs;
 
 int ZIGZAG[64] = int[64](
    0,  1,  5,  6, 14, 15, 27, 28,
@@ -34,8 +34,7 @@ void main() {
   int pos = -1;
   int turns = 0;
   while (turns < 64) {
-    ivec2 cidx = ivec2(index % 512, index >> 9);
-    uint packed_coeff = texelFetch(packed_coeffs, cidx, 0).r;
+    uint packed_coeff = texelFetch(packed_coeffs, index).r;
 
     if (packed_coeff == uint(0)) {
       // all the rest of the coefficients are zero

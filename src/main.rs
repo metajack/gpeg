@@ -152,17 +152,11 @@ fn decode_plane(ctx: &DecodeContext, plane: &Plane) -> glium::texture::IntegralT
         index_image,
         glium::texture::UncompressedUintFormat::U32,
         glium::texture::MipmapsOption::NoMipmap).unwrap();
-    let packed_image = glium::texture::RawImage2d {
-        data: Cow::Borrowed(&plane.packed_coeffs),
-        width: 512,
-        height: (plane.packed_coeffs.len() >> 9) as u32,
-        format: glium::texture::ClientFormat::U16,
-    };
-    let packed_texture = glium::texture::UnsignedTexture2d::with_format(
+
+    let packed_texture = glium::texture::buffer_texture::BufferTexture::new(
         &ctx.facade,
-        packed_image,
-        glium::texture::UncompressedUintFormat::U16,
-        glium::texture::MipmapsOption::NoMipmap).unwrap();
+        &plane.packed_coeffs,
+        glium::texture::buffer_texture::BufferTextureType::Unsigned).unwrap();
 
     let output_unpack = glium::texture::IntegralTexture2d::empty_with_format(
         &ctx.facade,
