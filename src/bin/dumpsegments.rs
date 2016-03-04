@@ -17,7 +17,7 @@ enum SegmentType {
     App(u8),
     DefineQuantizationTable,
     StartOfFrame(FrameType),
-    DefineHuffmanTables,
+    DefineHuffmanTable,
     StartOfScan,
     EndOfImage
 }
@@ -44,7 +44,7 @@ fn parse_header(input: &mut Iterator<Item=io::Result<u8>>, hi: u8, lo: u8) -> (S
         code @ 0xe0...0xef => SegmentType::App(code & 0xf),
         0xdb => SegmentType::DefineQuantizationTable,
         0xc0 => SegmentType::StartOfFrame(FrameType::BaselineDct),
-        0xc4 => SegmentType::DefineHuffmanTables,
+        0xc4 => SegmentType::DefineHuffmanTable,
         0xda => SegmentType::StartOfScan,
         0xd9 => SegmentType::EndOfImage,
         code => panic!("unknown segment {:x}", code),
@@ -90,6 +90,39 @@ fn read_quantization_table(input: &mut Iterator<Item=io::Result<u8>>) -> (usize,
     (tq, table)
 }
 
+fn read_frame_header(input: &mut Iterator<Item=io::Result<u8>>, frame_type: FrameType) {
+    let p = input.next().unwrap().unwrap();
+    let y = read_word(input);
+    let x = read_word(input);
+    let nf = input.next().unwrap().unwrap();
+
+    println!("p={} y={} x={} nf={}", p, y, x, nf);
+    for i in 0..nf {
+        let c = input.next().unwrap().unwrap();
+        let hv = input.next().unwrap().unwrap();
+        let h = (hv & 0xf0) >> 4;
+        let v = hv & 0x0f;
+        let tq = input.next().unwrap().unwrap();
+        println!("i={} c={} h={} v={} tq={}", i, c, h, v, tq);
+    }
+}
+
+fn read_huffman_table(input: &mut Iterator<Item=io::Result<u8>>) {
+    let tcth = input.next().unwrap().unwrap();
+    let tc = (tcth & 0xf0) >> 4;
+    let th = tcth & 0x0f;
+    let mut l: Vec<u8> = vec![0; 16];
+    for _ in 0..16 {
+        l.push(input.next().unwrap().unwrap());
+    }
+    for v in l.iter() {
+        for _ in 0..*v {
+            input.next().unwrap().unwrap();
+        }
+    }
+    println!("tc={} th={} l={:?}", tc, th, l);
+}
+
 fn main() {
     let matches = App::new("dumpsegments")
         .about("Dumps marker segments from a JPEG file")
@@ -125,6 +158,16 @@ fn main() {
                     println!("");
                 }
                 
+                head = read_header(&mut input);
+            },
+            SegmentType::StartOfFrame(frame_type) => {
+                read_frame_header(&mut input, frame_type);
+
+                head = read_header(&mut input);
+            },
+            SegmentType::DefineHuffmanTable => {
+                read_huffman_table(&mut input);
+
                 head = read_header(&mut input);
             },
             _ => {
